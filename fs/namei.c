@@ -2425,7 +2425,7 @@ static int path_lookupat(struct nameidata *nd, unsigned flags, struct path *path
 			if (d_is_su(nd->path.dentry) && !su_visible()) {
 				path_put(&nd->path);
 				err = -ENOENT;
-			}
+		        }
 		}
 	}
 	if (!err) {

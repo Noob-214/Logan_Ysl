@@ -819,8 +819,8 @@ void __noreturn do_exit(long code)
 
 	if (tsk->flags & PF_SU) {
 		su_exit();
-	}
 
+	}
 
 	/* sync mm's RSS info before statistics gathering */
 	if (tsk->mm)

@@ -95,12 +95,6 @@ static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 	s64 delta_ns;
 
 	if (unlikely(sg_policy->need_freq_update)) {
-		sg_policy->need_freq_update = false;
-		/*
-		 * This happens when limits change, so forget the previous
-		 * next_freq value and force an update.
-		 */
-		sg_policy->next_freq = UINT_MAX;
 		return true;
 	}
 

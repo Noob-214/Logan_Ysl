@@ -7768,8 +7768,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 	if (sd_flag & SD_BALANCE_WAKE) {
 		int _wake_cap = wake_cap(p, cpu, prev_cpu);
+		int _cpus_allowed = cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
 
-		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
+		if (_cpus_allowed) {
 			bool about_to_idle = (cpu_rq(cpu)->nr_running < 2);
 
 			if (sysctl_sched_sync_hint_enable && sync &&
@@ -7778,8 +7779,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		}
 
 		record_wakee(p);
-		want_affine = !wake_wide(p, sibling_count_hint) && !_wake_cap
-			      && cpumask_test_cpu(cpu, &p->cpus_allowed);
+		want_affine = (!wake_wide(p, sibling_count_hint) && !_wake_cap
+			      && _cpus_allowed);
+
 	}
 
 	if (energy_aware()) {

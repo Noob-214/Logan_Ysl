@@ -215,12 +215,43 @@ int  fts_enter_cover_mode( struct i2c_client *client, int mode)
 	return ret ;
 }
 
-/* read and write cover mode
-*   read example: cat  fts_touch_cover_mode---read  cover mode
-*   write example:echo 01 > fts_touch_cover_mode ---write cover mode to 01
-*
-*/
-static DEVICE_ATTR (fts_cover_mode,  S_IRUGO|S_IWUSR, fts_touch_cover_show, fts_touch_cover_store);
+#if (!(FTS_UPGRADE_STRESS_TEST))
+/************************************************************************
+* Name: fts_ctpm_check_fw_status
+* Brief: Check App is valid or not
+* Input:
+* Output:
+* Return: -EIO - I2C communication error
+*         FTS_RUN_IN_APP - APP valid
+*         0 - APP invalid
+***********************************************************************/
+static int fts_ctpm_check_fw_status(struct i2c_client *client)
+{
+	u8 chip_id1 = 0;
+	u8 chip_id2 = 0;
+	int fw_status = FTS_RUN_IN_ERROR;
+	int i = 0;
+	int ret = 0;
+	int i2c_noack_retry = 0;
+
+	for (i = 0; i < 5; i++)
+	{
+		ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &chip_id1);
+		if (ret < 0)
+		{
+			i2c_noack_retry++;
+			continue;
+		}
+		ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID2, &chip_id2);
+		if (ret < 0)
+		{
+			i2c_noack_retry++;
+			continue;
+		}
+
+		if (chip_id1 == chip_types.chip_idh
+#if FTS_CHIP_IDC
+			&& chip_id2 == chip_types.chip_idl
 #endif
 
 #if FTS_CHARGER_EN

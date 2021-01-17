@@ -1,6 +1,10 @@
 VERSION = 4
 PATCHLEVEL = 9
+<<<<<<< HEAD
 SUBLEVEL = 251
+=======
+SUBLEVEL = 252
+>>>>>>> af4794ccaf40... Merge tag 'v4.9.252' into R
 EXTRAVERSION =
 NAME = Roaring Lionus
 

@@ -42,7 +42,6 @@
 #define result		w0
 
 /* Internal variables.  */
-<<<<<<< HEAD
 data1		.req	x3
 data1w		.req	w3
 data2		.req	x4
@@ -155,7 +154,6 @@ CPU_LE( lsr	tmp2, tmp2, tmp1 )
 	ccmp	data1w, data2w, #0, ne  /* NZCV = 0b0000.  */
 	b.eq	.Ltinycmp
 	cbnz	pos, 1f /*diff occurred before the last byte.*/
-=======
 #define data1		x3
 #define data1w		w3
 #define data2		x4
@@ -228,7 +226,6 @@ WEAK(memcmp)
 	b.lo	.Lless4
 	ldr	data1w, [src1], 4
 	ldr	data2w, [src2], 4
->>>>>>> 89188269c86e... arm64: Use optimized memcmp
 	cmp	data1w, data2w
 	b.ne	.Lreturn
 	sub	limit, limit, 4

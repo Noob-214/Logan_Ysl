@@ -466,11 +466,6 @@
 		*(TEXT_MAIN .text.fixup)				\
 		*(.text.unlikely .text.unlikely.*)			\
 		*(.text.unknown .text.unknown.*)			\
-<<<<<<< HEAD
-=======
-		*(.text..ftrace)					\
-		*(TEXT_CFI_MAIN) 					\
->>>>>>> 6e7e1e8cde85... Merge https://github.com/KudProject/kernel_msm-4.9 into ThinLTO
 		*(.ref.text)						\
 	MEM_KEEP(init.text)						\
 	MEM_KEEP(exit.text)						\

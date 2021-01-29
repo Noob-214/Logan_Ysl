@@ -782,7 +782,7 @@ void a6xx_preemption_context_destroy(struct kgsl_context *context)
 	struct kgsl_device *device = context->device;
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 
-	if (!ADRENO_FEATURE(adreno_dev, ADRENO_PREEMPTION))
+	if (!adreno_is_preemption_enabled(adreno_dev))
 		return;
 
 	gpumem_free_entry(context->user_ctxt_record);
@@ -797,7 +797,7 @@ int a6xx_preemption_context_init(struct kgsl_context *context)
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	uint64_t flags = 0;
 
-	if (!ADRENO_FEATURE(adreno_dev, ADRENO_PREEMPTION))
+	if (!adreno_is_preemption_enabled(adreno_dev))
 		return 0;
 
 	if (context->flags & KGSL_CONTEXT_SECURE)

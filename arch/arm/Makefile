@@ -39,7 +39,7 @@ endif
 
 # This should work on most of the modern platforms
 KBUILD_DEFCONFIG := multi_v7_defconfig
-ifeq ($(cc-name),clang)
+ifeq ($(COMPILER),clang)
 KBUILD_CFLAGS += -Wa,-mno-warn-deprecated
 endif
 
@@ -375,8 +375,6 @@ Image-dtb: vmlinux scripts dtbs
 # We use MRPROPER_FILES and CLEAN_FILES now
 archclean:
 	$(Q)$(MAKE) $(clean)=$(boot)
-	$(Q)$(MAKE) $(clean)=$(boot)/dts
-	$(foreach DIR, $(DTSSUBDIR), $(Q)$(MAKE) $(clean)=$(boot)/dts/$(DIR))
 
 # My testing targets (bypasses dependencies)
 bp:;	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/bootpImage

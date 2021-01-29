@@ -1,16 +1,11 @@
 #ifndef __UAPI_CORESIGHT_STM_H_
 #define __UAPI_CORESIGHT_STM_H_
 
-<<<<<<< HEAD
 #include <linux/const.h>
 
 #define STM_FLAG_TIMESTAMPED   _BITUL(3)
 #define STM_FLAG_GUARANTEED    _BITUL(7)
-=======
->>>>>>> 6e7e1e8cde85... Merge https://github.com/KudProject/kernel_msm-4.9 into ThinLTO
 #define STM_FLAG_NONE		0x00
-#define STM_FLAG_TIMESTAMPED	0x08
-#define STM_FLAG_GUARANTEED	0x80
 
 #define	OST_ENTITY_NONE			0x00
 #define	OST_ENTITY_FTRACE_EVENTS	0x01

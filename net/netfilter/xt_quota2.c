@@ -301,9 +301,7 @@ quota_mt2(const struct sk_buff *skb, struct xt_action_param *par)
 			ret = !ret;
 		} else {
 			/* We are transitioning, log that fact. */
-			if (e->quota) {
-				quota2_log(par->in, par->out, e, q->name);
-			}
+			quota2_log(par->in, par->out, e, q->name);
 			/* we do not allow even small packets from now on */
 			e->quota = 0;
 		}

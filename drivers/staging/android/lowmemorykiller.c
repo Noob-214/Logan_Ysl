@@ -749,11 +749,14 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		lowmem_deathpending_timeout = jiffies + HZ;
 		rem += selected_tasksize;
+<<<<<<< HEAD
 #ifdef LMK_TNG_ENABLE_TRACE
 		trace_lmk_sigkill(selected->pid, selected->comm,
 				  selected_oom_score_adj, selected_tasksize,
 				  sc->gfp_mask);
 #endif
+=======
+>>>>>>> 6e7e1e8cde85... Merge https://github.com/KudProject/kernel_msm-4.9 into ThinLTO
 		rcu_read_unlock();
 		/* give the system time to free up the memory */
 		msleep_interruptible(20);

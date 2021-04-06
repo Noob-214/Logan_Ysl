@@ -98,7 +98,11 @@ int msm_audio_effects_enable_extn(struct audio_client *ac,
 	if (effects->bass_boost.enable_flag)
 		q6asm_send_audio_effects_params(ac, (char *)&updt_params[0],
 					params_length);
+<<<<<<< HEAD
 	memset(updt_params, 0,  sizeof(updt_params));
+=======
+	memset(updt_params, 0, sizeof(updt_params));
+>>>>>>> kud/a11/compiler-fixes
 	params_length = 0;
 	updt_params[0] = AUDPROC_MODULE_ID_POPLESS_EQUALIZER;
 	updt_params[1] = AUDPROC_PARAM_ID_ENABLE;

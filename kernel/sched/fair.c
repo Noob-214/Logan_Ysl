@@ -41,7 +41,8 @@
 
 static inline bool task_fits_max(struct task_struct *p, int cpu);
 static void walt_fixup_sched_stats_fair(struct rq *rq, struct task_struct *p,
-					u32 new_task_load, u32 new_pred_demand);
+					u16 updated_demand_scaled,
+					u16 updated_pred_demand_scaled);
 static void walt_fixup_nr_big_tasks(struct rq *rq, struct task_struct *p,
 				    int delta, bool inc);
 #endif /* CONFIG_SCHED_WALT */
@@ -82,8 +83,8 @@ walt_dec_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p) {}
  * (to see the precise effective timeslice length of your workload,
  *  run vmstat and monitor the context-switches (cs) field)
  */
-unsigned int sysctl_sched_latency = 5000000ULL;
-unsigned int normalized_sysctl_sched_latency = 5000000ULL;
+unsigned int sysctl_sched_latency = 22844130ULL;
+unsigned int normalized_sysctl_sched_latency = 22844130ULL;
 
 unsigned int sysctl_sched_is_big_little = 1;
 unsigned int sysctl_sched_sync_hint_enable = 1;
@@ -104,14 +105,14 @@ unsigned int sysctl_sched_use_walt_task_util = 1;
  * SCHED_TUNABLESCALING_LINEAR - scaled linear, *ncpus
  */
 enum sched_tunable_scaling sysctl_sched_tunable_scaling
-	= SCHED_TUNABLESCALING_LOG;
+	= SCHED_TUNABLESCALING_LINEAR;
 
 /*
  * Minimal preemption granularity for CPU-bound tasks:
  * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
  */
-unsigned int sysctl_sched_min_granularity = 750000ULL;
-unsigned int normalized_sysctl_sched_min_granularity = 750000ULL;
+unsigned int sysctl_sched_min_granularity = 2855516ULL;
+unsigned int normalized_sysctl_sched_min_granularity = 2855516ULL;
 
 /*
  * is kept at sysctl_sched_latency / sysctl_sched_min_granularity
@@ -132,8 +133,8 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
  * and reduces their over-scheduling. Synchronous workloads will still
  * have immediate wakeup/sleep latencies.
  */
-unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
-unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
+unsigned int sysctl_sched_wakeup_granularity = 3807355UL;
+unsigned int normalized_sysctl_sched_wakeup_granularity = 3807355UL;
 
 const_debug unsigned int sysctl_sched_migration_cost = 0;
 
@@ -6705,10 +6706,12 @@ static int select_idle_core(struct task_struct *p, struct sched_domain *sd, int 
 		bool idle = true;
 
 		for_each_cpu(cpu, cpu_smt_mask(core)) {
-			cpumask_clear_cpu(cpu, cpus);
-			if (!idle_cpu(cpu))
+			if (!idle_cpu(cpu)) {
 				idle = false;
+				break;
+			}
 		}
+		cpumask_andnot(cpus, cpus, cpu_smt_mask(core));
 
 		if (idle)
 			return core;
@@ -9732,7 +9735,22 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
 	capa_move /= SCHED_CAPACITY_SCALE;
 
 	/* Move if we gain throughput */
-	if (capa_move > capa_now)
+	if (capa_move > capa_now) {
+		env->imbalance = busiest->load_per_task;
+		return;
+	}
+
+	/* We can't see throughput improvement with the load-based
+	 * method, but it is possible depending upon group size and
+	 * capacity range that there might still be an underutilized
+	 * cpu available in an asymmetric capacity system. Do one last
+	 * check just in case.
+	 */
+	if (env->sd->flags & SD_ASYM_CPUCAPACITY &&
+	    busiest->group_type == group_overloaded &&
+	    busiest->sum_nr_running > busiest->group_weight &&
+	    local->sum_nr_running < local->group_weight &&
+	    local->group_capacity < busiest->group_capacity)
 		env->imbalance = busiest->load_per_task;
 }
 
@@ -11875,22 +11893,24 @@ __init void init_sched_fair_class(void)
 static void walt_init_cfs_rq_stats(struct cfs_rq *cfs_rq)
 {
 	cfs_rq->walt_stats.nr_big_tasks = 0;
-	cfs_rq->walt_stats.cumulative_runnable_avg = 0;
+	cfs_rq->walt_stats.cumulative_runnable_avg_scaled = 0;
 	cfs_rq->walt_stats.pred_demands_sum = 0;
 }
 
 static void walt_inc_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p)
 {
 	inc_nr_big_task(&cfs_rq->walt_stats, p);
-	fixup_cumulative_runnable_avg(&cfs_rq->walt_stats, p->ravg.demand,
-				      p->ravg.pred_demand);
+	fixup_cumulative_runnable_avg(&cfs_rq->walt_stats,
+				      p->ravg.demand_scaled,
+				      p->ravg.pred_demand_scaled);
 }
 
 static void walt_dec_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p)
 {
 	dec_nr_big_task(&cfs_rq->walt_stats, p);
-	fixup_cumulative_runnable_avg(&cfs_rq->walt_stats, -(s64)p->ravg.demand,
-				      -(s64)p->ravg.pred_demand);
+	fixup_cumulative_runnable_avg(&cfs_rq->walt_stats,
+				      -(s64)p->ravg.demand_scaled,
+				      -(s64)p->ravg.pred_demand_scaled);
 }
 
 static void walt_inc_throttled_cfs_rq_stats(struct walt_sched_stats *stats,
@@ -11900,12 +11920,12 @@ static void walt_inc_throttled_cfs_rq_stats(struct walt_sched_stats *stats,
 
 	stats->nr_big_tasks += tcfs_rq->walt_stats.nr_big_tasks;
 	fixup_cumulative_runnable_avg(stats,
-				tcfs_rq->walt_stats.cumulative_runnable_avg,
-				tcfs_rq->walt_stats.pred_demands_sum);
+			tcfs_rq->walt_stats.cumulative_runnable_avg_scaled,
+			tcfs_rq->walt_stats.pred_demands_sum_scaled);
 
 	if (stats == &rq->walt_stats)
 		walt_fixup_cum_window_demand(rq,
-			tcfs_rq->walt_stats.cumulative_runnable_avg);
+			tcfs_rq->walt_stats.cumulative_runnable_avg_scaled);
 
 }
 
@@ -11916,8 +11936,8 @@ static void walt_dec_throttled_cfs_rq_stats(struct walt_sched_stats *stats,
 
 	stats->nr_big_tasks -= tcfs_rq->walt_stats.nr_big_tasks;
 	fixup_cumulative_runnable_avg(stats,
-				-tcfs_rq->walt_stats.cumulative_runnable_avg,
-				-tcfs_rq->walt_stats.pred_demands_sum);
+			-tcfs_rq->walt_stats.cumulative_runnable_avg_scaled,
+			-tcfs_rq->walt_stats.pred_demands_sum_scaled);
 
 	/*
 	 * We remove the throttled cfs_rq's tasks's contribution from the
@@ -11926,16 +11946,19 @@ static void walt_dec_throttled_cfs_rq_stats(struct walt_sched_stats *stats,
 	 */
 	if (stats == &rq->walt_stats)
 		walt_fixup_cum_window_demand(rq,
-			-tcfs_rq->walt_stats.cumulative_runnable_avg);
+			-tcfs_rq->walt_stats.cumulative_runnable_avg_scaled);
 }
 
 static void walt_fixup_sched_stats_fair(struct rq *rq, struct task_struct *p,
-				       u32 new_task_load, u32 new_pred_demand)
+					u16 updated_demand_scaled,
+					u16 updated_pred_demand_scaled)
 {
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se = &p->se;
-	s64 task_load_delta = (s64)new_task_load - task_load(p);
-	s64 pred_demand_delta = PRED_DEMAND_DELTA;
+	s64 task_load_delta = (s64)updated_demand_scaled -
+			      p->ravg.demand_scaled;
+	s64 pred_demand_delta = (s64)updated_pred_demand_scaled -
+				p->ravg.pred_demand_scaled;
 
 	for_each_sched_entity(se) {
 		cfs_rq = cfs_rq_of(se);
@@ -12007,9 +12030,11 @@ static int task_will_be_throttled(struct task_struct *p)
 #else /* CONFIG_CFS_BANDWIDTH */
 
 static void walt_fixup_sched_stats_fair(struct rq *rq, struct task_struct *p,
-				       u32 new_task_load, u32 new_pred_demand)
+					u16 updated_demand_scaled,
+					u16 updated_pred_demand_scaled)
 {
-	fixup_walt_sched_stats_common(rq, p, new_task_load, new_pred_demand);
+	fixup_walt_sched_stats_common(rq, p, updated_demand_scaled,
+				      updated_pred_demand_scaled);
 }
 
 static void walt_fixup_nr_big_tasks(struct rq *rq, struct task_struct *p,

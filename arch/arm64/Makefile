@@ -90,7 +90,9 @@ endif
 ifeq ($(CONFIG_ARM64_MODULE_PLTS),y)
 KBUILD_LDFLAGS_MODULE	+= -T $(srctree)/arch/arm64/kernel/module.lds
 endif
-
+ifeq ($(CONFIG_ARCH_MSM8953), y)
+KBUILD_CFLAGS	+= -mcpu=cortex-a53
+endif
 # Default value
 head-y		:= arch/arm64/kernel/head.o
 

@@ -1276,10 +1276,11 @@ static int ep_create_wakeup_source(struct epitem *epi)
 			return -ENOMEM;
 	}
 
-	name = epi->ffd.file->f_path.dentry->d_name.name;
 	snprintf(buf, sizeof(buf), "epoll_%.*s_file:%s",
-		 (int)sizeof(task_comm_buf), task_comm_buf, name);
-	ws = wakeup_source_register(buf);
+		 (int)sizeof(task_comm_buf), task_comm_buf, n.name);
+	take_dentry_name_snapshot(&n, epi->ffd.file->f_path.dentry);
+	ws = wakeup_source_register(n.name);
+	release_dentry_name_snapshot(&n);
 
 	if (!ws)
 		return -ENOMEM;
@@ -1887,8 +1888,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
 		goto error_tgt_fput;
 
 	/* Check if EPOLLWAKEUP is allowed */
-	if (ep_op_has_event(op))
-		ep_take_care_of_epollwakeup(&epds);
+	epds.events &= ~EPOLLWAKEUP;
 
 	/*
 	 * We have to check that the file structure underneath the file descriptor

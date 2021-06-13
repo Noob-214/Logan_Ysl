@@ -8266,6 +8266,7 @@
 		qcom,mdss-dsi-panel-status-read-length = <1>;
 		qcom,mdss-dsi-panel-status-value = <0x9c>;
 		qcom,mdss-dsi-panel-max-error-count = <3>;
+		qcom,mdss-dsi-panel-jitter = <0x8 0xa>;
 		qcom,ulps-enabled;
 		qcom,suspend-ulps-enabled;
 	};

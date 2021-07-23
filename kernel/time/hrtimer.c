@@ -51,7 +51,7 @@
 #include <linux/freezer.h>
 #include <linux/delay.h>
 
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 
 #include <trace/events/timer.h>
 

@@ -34,7 +34,7 @@
 #include <linux/bitops.h>
 #include <linux/overflow.h>
 #include <linux/rbtree_augmented.h>
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 #include <asm/tlbflush.h>
 #include <asm/shmparam.h>
 

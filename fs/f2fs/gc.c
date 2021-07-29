@@ -121,7 +121,7 @@ static int gc_thread_func(void *data)
 		if (sbi->gc_mode == GC_URGENT || sbi->rapid_gc) {
 			if (!sbi->rapid_gc)
 				wait_ms = gc_th->urgent_sleep_time;
-			mutex_lock(&sbi->gc_mutex);
+			down_write(&sbi->gc_lock);
 			goto do_gc;
 		}
 
@@ -331,12 +331,10 @@ void __init f2fs_init_rapid_gc(void)
 {
 	INIT_WORK(&rapid_gc_fb_worker, rapid_gc_fb_work);
 	wakeup_source_init(&gc_wakelock, "f2fs_rapid_gc_wakelock");
-	msm_drm_register_client(&fb_notifier_block);
 }
 
 void __exit f2fs_destroy_rapid_gc(void)
 {
-	msm_drm_unregister_client(&fb_notifier_block);
 	wakeup_source_trash(&gc_wakelock);
 }
 

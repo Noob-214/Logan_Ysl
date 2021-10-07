@@ -600,25 +600,18 @@ static void fnhe_flush_routes(struct fib_nh_exception *fnhe)
 	}
 }
 
-static void fnhe_remove_oldest(struct fnhe_hash_bucket *hash)
+static struct fib_nh_exception *fnhe_oldest(struct fnhe_hash_bucket *hash)
 {
-	struct fib_nh_exception __rcu **fnhe_p, **oldest_p;
-	struct fib_nh_exception *fnhe, *oldest = NULL;
+	struct fib_nh_exception *fnhe, *oldest;
 
-	for (fnhe_p = &hash->chain; ; fnhe_p = &fnhe->fnhe_next) {
-		fnhe = rcu_dereference_protected(*fnhe_p,
-						 lockdep_is_held(&fnhe_lock));
-		if (!fnhe)
-			break;
-		if (!oldest ||
-		    time_before(fnhe->fnhe_stamp, oldest->fnhe_stamp)) {
+	oldest = rcu_dereference(hash->chain);
+	for (fnhe = rcu_dereference(oldest->fnhe_next); fnhe;
+	     fnhe = rcu_dereference(fnhe->fnhe_next)) {
+		if (time_before(fnhe->fnhe_stamp, oldest->fnhe_stamp))
 			oldest = fnhe;
-			oldest_p = fnhe_p;
-		}
 	}
 	fnhe_flush_routes(oldest);
-	*oldest_p = oldest->fnhe_next;
-	kfree_rcu(oldest, rcu);
+	return oldest;
 }
 
 static inline u32 fnhe_hashfun(__be32 daddr)
@@ -695,29 +688,22 @@ static void update_or_create_fnhe(struct fib_nh *nh, __be32 daddr, __be32 gw,
 		if (rt)
 			fill_route_from_fnhe(rt, fnhe);
 	} else {
-		/* Randomize max depth to avoid some side channels attacks. */
-		int max_depth = FNHE_RECLAIM_DEPTH +
-				prandom_u32_max(FNHE_RECLAIM_DEPTH);
+		if (depth > FNHE_RECLAIM_DEPTH)
+			fnhe = fnhe_oldest(hash);
+		else {
+			fnhe = kzalloc(sizeof(*fnhe), GFP_ATOMIC);
+			if (!fnhe)
+				goto out_unlock;
 
-		while (depth > max_depth) {
-			fnhe_remove_oldest(hash);
-			depth--;
+			fnhe->fnhe_next = hash->chain;
+			rcu_assign_pointer(hash->chain, fnhe);
 		}
-
-		fnhe = kzalloc(sizeof(*fnhe), GFP_ATOMIC);
-		if (!fnhe)
-			goto out_unlock;
-
-		fnhe->fnhe_next = hash->chain;
-
 		fnhe->fnhe_genid = genid;
 		fnhe->fnhe_daddr = daddr;
 		fnhe->fnhe_gw = gw;
 		fnhe->fnhe_pmtu = pmtu;
 		fnhe->fnhe_mtu_locked = lock;
 		fnhe->fnhe_expires = expires;
-
-		rcu_assign_pointer(hash->chain, fnhe);
 
 		/* Exception created; mark the cached routes for the nexthop
 		 * stale, so anyone caching it rechecks if this exception

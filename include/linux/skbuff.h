@@ -1617,7 +1617,7 @@ static inline void __skb_insert(struct sk_buff *newsk,
 	newsk->next = next;
 	newsk->prev = prev;
 	next->prev  = prev->next = newsk;
-	WRITE_ONCE(list->qlen, list->qlen + 1);
+	list->qlen++;
 }
 
 static inline void __skb_queue_splice(const struct sk_buff_head *list,

@@ -419,6 +419,8 @@ config NETHUNTER_WIFI_DRIVERS_SUPPORT
 
 	select RTL8187
 
+	select RTL8188FU
+
 	select RTL_CARDS
 
 	select RTL8192CU

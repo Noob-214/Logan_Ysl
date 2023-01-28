@@ -124,7 +124,7 @@ unsigned char FT5X46_TestItem_WeakShortTest(bool * bTestResult);
 * Output: none
 * Return: Test Result, PASS or FAIL
 ***********************************************************************/
-boolean FT5X46_StartTest()
+boolean FT5X46_StartTest(void)
 {
 	bool bTestResult = true;
 	bool bTempResult = 1;

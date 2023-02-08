@@ -2969,7 +2969,7 @@ static int smbchg_system_temp_level_set(struct smbchg_chip *chip,
 	if ((lct_backlight_off) && (LctIsInCall == 0) && (lvl_sel > 0)) {
 	    return 0;
 	}
-	pr_err("LctThermal=%d, lct_backlight_off= %d, IsInCall=%d\n", LctThermal, lct_backlight_off, LctIsInCall);
+	pr_debug("LctThermal=%d, lct_backlight_off= %d, IsInCall=%d\n", LctThermal, lct_backlight_off, LctIsInCall);
 	#endif
 	
 	if (lvl_sel >= chip->thermal_levels) {
